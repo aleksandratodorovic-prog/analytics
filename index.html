@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Checkout Funnel — CR vs AR</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #0f1117;
+    color: #e1e4e8;
+    min-height: 100vh;
+    padding: 40px 20px;
+  }
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+  h1 {
+    font-size: 28px;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 8px;
+    color: #fff;
+  }
+  .subtitle {
+    text-align: center;
+    color: #8b949e;
+    font-size: 15px;
+    margin-bottom: 48px;
+  }
+
+  /* Legend */
+  .legend {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    margin-bottom: 40px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .legend-swatch {
+    width: 40px;
+    height: 6px;
+    border-radius: 3px;
+  }
+  .swatch-cr { background: linear-gradient(90deg, #58a6ff, #79c0ff); }
+  .swatch-ar { background: linear-gradient(90deg, #f0883e, #f4a261); }
+  .swatch-gap { background: repeating-linear-gradient(90deg, #da3633, #da3633 4px, transparent 4px, transparent 8px); }
+
+  /* Funnel layout */
+  .funnel-wrapper {
+    display: flex;
+    gap: 0;
+    align-items: stretch;
+  }
+  .funnel-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .annotations-col {
+    width: 280px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  /* Funnel step */
+  .funnel-step {
+    position: relative;
+    display: flex;
+    align-items: center;
+    height: 72px;
+  }
+  .funnel-bar-wrapper {
+    position: relative;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+  .funnel-bar {
+    height: 52px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    position: relative;
+    transition: all 0.3s;
+  }
+  .funnel-bar:hover {
+    filter: brightness(1.15);
+    transform: scaleY(1.04);
+  }
+  .step-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
+    white-space: nowrap;
+  }
+  .step-pct {
+    font-size: 20px;
+    font-weight: 800;
+    color: #fff;
+  }
+  .step-number {
+    position: absolute;
+    left: -32px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #21262d;
+    border: 2px solid #30363d;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    color: #8b949e;
+  }
+
+  /* Drop-off indicators */
+  .dropoff {
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .dropoff-line {
+    position: absolute;
+    right: 0;
+    width: 2px;
+    height: 100%;
+    background: #da363388;
+  }
+  .dropoff-label {
+    font-size: 11px;
+    color: #da3633;
+    font-weight: 600;
+    background: #0f1117;
+    padding: 0 8px;
+    z-index: 1;
+  }
+
+  /* Bracket annotations */
+  .annotation-step {
+    height: 72px;
+    display: flex;
+    align-items: center;
+  }
+  .annotation-dropoff {
+    height: 28px;
+  }
+
+  /* CR / AR bracket */
+  .bracket-zone {
+    position: relative;
+    margin-left: 24px;
+  }
+
+  /* Big bracket groups */
+  .bracket-group {
+    position: absolute;
+    display: flex;
+    align-items: center;
+  }
+  .bracket-line {
+    width: 3px;
+    border-radius: 2px;
+  }
+  .bracket-label {
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    margin-left: 8px;
+  }
+  .bracket-sublabel {
+    writing-mode: vertical-rl;
+    font-size: 10px;
+    color: #8b949e;
+    margin-left: 4px;
+  }
+
+  /* Summary cards */
+  .summary {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-top: 48px;
+  }
+  .card {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 12px;
+    padding: 24px;
+  }
+  .card-title {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #8b949e;
+    margin-bottom: 8px;
+  }
+  .card-value {
+    font-size: 32px;
+    font-weight: 800;
+  }
+  .card-desc {
+    font-size: 13px;
+    color: #8b949e;
+    margin-top: 8px;
+    line-height: 1.5;
+  }
+  .val-cr { color: #58a6ff; }
+  .val-ar { color: #f0883e; }
+  .val-gap { color: #da3633; }
+
+  /* Equation */
+  .equation {
+    text-align: center;
+    margin-top: 40px;
+    padding: 24px;
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 12px;
+  }
+  .equation-text {
+    font-size: 18px;
+    font-weight: 600;
+    color: #c9d1d9;
+  }
+  .eq-cr { color: #58a6ff; }
+  .eq-ar { color: #f0883e; }
+  .eq-sym { color: #8b949e; }
+
+  /* Detail section */
+  .detail-section {
+    margin-top: 48px;
+  }
+  .detail-section h2 {
+    font-size: 20px;
+    margin-bottom: 20px;
+    color: #fff;
+  }
+  .detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  .detail-card {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 12px;
+    padding: 24px;
+  }
+  .detail-card h3 {
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .tag {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .tag-cr { background: #58a6ff22; color: #58a6ff; }
+  .tag-ar { background: #f0883e22; color: #f0883e; }
+  .tag-both { background: #8b949e22; color: #8b949e; }
+  .detail-list {
+    list-style: none;
+    padding: 0;
+  }
+  .detail-list li {
+    font-size: 13px;
+    color: #8b949e;
+    padding: 4px 0;
+    padding-left: 16px;
+    position: relative;
+    line-height: 1.5;
+  }
+  .detail-list li::before {
+    content: "→";
+    position: absolute;
+    left: 0;
+    color: #30363d;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Checkout SDK Funnel</h1>
+  <p class="subtitle">Conversion Rate (CR) vs Approval Rate (AR) — where each metric starts and ends</p>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-swatch swatch-cr"></div> Conversion Rate (CR)</div>
+    <div class="legend-item"><div class="legend-swatch swatch-ar"></div> Approval Rate (AR)</div>
+    <div class="legend-item"><div class="legend-swatch swatch-gap"></div> Drop-off (lost users)</div>
+  </div>
+
+  <!-- Funnel -->
+  <div style="display: flex; position: relative;">
+    <!-- Funnel bars -->
+    <div style="flex: 1;">
+
+      <!-- Step 1 -->
+      <div class="funnel-step">
+        <div class="funnel-bar-wrapper">
+          <div class="funnel-bar" style="width: 100%; background: linear-gradient(135deg, #1a3a5c, #1e4976);">
+            <span class="step-number">1</span>
+            <span class="step-label">Checkout Initiated</span>
+            <span class="step-pct">100%</span>
+          </div>
+        </div>
+      </div>
+      <div class="dropoff"><span class="dropoff-label">▼ 8% abandon before page loads</span></div>
+
+      <!-- Step 2 -->
+      <div class="funnel-step">
+        <div class="funnel-bar-wrapper">
+          <div class="funnel-bar" style="width: 92%; background: linear-gradient(135deg, #1a3a5c, #1e4976);">
+            <span class="step-number">2</span>
+            <span class="step-label">Payment Form Rendered</span>
+            <span class="step-pct">92%</span>
+          </div>
+        </div>
+      </div>
+      <div class="dropoff"><span class="dropoff-label">▼ 7% browse but leave</span></div>
+
+      <!-- Step 3 -->
+      <div class="funnel-step">
+        <div class="funnel-bar-wrapper">
+          <div class="funnel-bar" style="width: 85%; background: linear-gradient(135deg, #1a3a5c, #1e4976);">
+            <span class="step-number">3</span>
+            <span class="step-label">Payment Method Selected</span>
+            <span class="step-pct">85%</span>
+          </div>
+        </div>
+      </div>
+      <div class="dropoff"><span class="dropoff-label">▼ 7% abandon during input</span></div>
+
+      <!-- Step 4 -->
+      <div class="funnel-step">
+        <div class="funnel-bar-wrapper">
+          <div class="funnel-bar" style="width: 78%; background: linear-gradient(135deg, #1a3a5c, #1e4976);">
+            <span class="step-number">4</span>
+            <span class="step-label">Payment Details Entered</span>
+            <span class="step-pct">78%</span>
+          </div>
+        </div>
+      </div>
+      <div class="dropoff"><span class="dropoff-label">▼ 3% fail validation / give up</span></div>
+
+      <!-- Step 5 — AR starts here -->
+      <div class="funnel-step">
+        <div class="funnel-bar-wrapper">
+          <div class="funnel-bar" style="width: 75%; background: linear-gradient(135deg, #5c3a1a, #76491e);">
+            <span class="step-number">5</span>
+            <span class="step-label">Payment Submitted</span>
+            <span class="step-pct">75%</span>
+          </div>
+        </div>
+      </div>
+      <div class="dropoff"><span class="dropoff-label">▼ 10% sent to 3DS challenge</span></div>
+
+      <!-- Step 6 -->
+      <div class="funnel-step">
+        <div class="funnel-bar-wrapper">
+          <div class="funnel-bar" style="width: 72%; background: linear-gradient(135deg, #5c3a1a, #76491e);">
+            <span class="step-number">6</span>
+            <span class="step-label">3DS Challenge (if triggered)</span>
+            <span class="step-pct">~72%</span>
+          </div>
+        </div>
+      </div>
+      <div class="dropoff"><span class="dropoff-label">▼ 3–5% abandon 3DS</span></div>
+
+      <!-- Step 7 -->
+      <div class="funnel-step">
+        <div class="funnel-bar-wrapper">
+          <div class="funnel-bar" style="width: 68%; background: linear-gradient(135deg, #5c3a1a, #76491e);">
+            <span class="step-number">7</span>
+            <span class="step-label">Authorization Request Sent</span>
+            <span class="step-pct">68%</span>
+          </div>
+        </div>
+      </div>
+      <div class="dropoff"><span class="dropoff-label">▼ 3% declined by issuer</span></div>
+
+      <!-- Step 8 -->
+      <div class="funnel-step">
+        <div class="funnel-bar-wrapper">
+          <div class="funnel-bar" style="width: 65%; background: linear-gradient(135deg, #1a5c2a, #1e7634);">
+            <span class="step-number">8</span>
+            <span class="step-label">Payment Authorized ✓</span>
+            <span class="step-pct">65%</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Right-side brackets -->
+    <div style="width: 240px; flex-shrink: 0; position: relative;">
+
+      <!-- CR bracket: spans step 1 to step 8 = full height -->
+      <div style="position: absolute; top: 0; left: 30px; display: flex; align-items: stretch; height: 100%;">
+        <div style="display: flex; flex-direction: column; align-items: center;">
+          <div style="width: 20px; height: 12px; border-right: 3px solid #58a6ff; border-top: 3px solid #58a6ff; border-top-right-radius: 6px;"></div>
+          <div style="width: 20px; flex: 1; border-right: 3px solid #58a6ff;"></div>
+          <div style="width: 20px; height: 12px; border-right: 3px solid #58a6ff; border-bottom: 3px solid #58a6ff; border-bottom-right-radius: 6px;"></div>
+        </div>
+        <div style="display: flex; flex-direction: column; justify-content: center; margin-left: 12px;">
+          <div style="font-size: 15px; font-weight: 800; color: #58a6ff;">CONVERSION</div>
+          <div style="font-size: 15px; font-weight: 800; color: #58a6ff;">RATE</div>
+          <div style="font-size: 12px; color: #8b949e; margin-top: 4px;">Steps 1 → 8</div>
+          <div style="font-size: 22px; font-weight: 800; color: #58a6ff; margin-top: 4px;">65%</div>
+          <div style="font-size: 11px; color: #8b949e;">of users who</div>
+          <div style="font-size: 11px; color: #8b949e;">started checkout</div>
+        </div>
+      </div>
+
+      <!-- AR bracket: spans step 5 to step 8 -->
+      <!-- Step 5 top starts at: 4 steps × 72px + 4 dropoffs × 28px = 288+112 = 400px -->
+      <!-- Step 8 bottom ends at: 8 steps × 72px + 7 dropoffs × 28px = 576+196 = 772px -->
+      <div style="position: absolute; top: 400px; left: 160px; display: flex; align-items: stretch; height: 372px;">
+        <div style="display: flex; flex-direction: column; align-items: center;">
+          <div style="width: 20px; height: 12px; border-right: 3px solid #f0883e; border-top: 3px solid #f0883e; border-top-right-radius: 6px;"></div>
+          <div style="width: 20px; flex: 1; border-right: 3px solid #f0883e;"></div>
+          <div style="width: 20px; height: 12px; border-right: 3px solid #f0883e; border-bottom: 3px solid #f0883e; border-bottom-right-radius: 6px;"></div>
+        </div>
+        <div style="display: flex; flex-direction: column; justify-content: center; margin-left: 12px;">
+          <div style="font-size: 15px; font-weight: 800; color: #f0883e;">APPROVAL</div>
+          <div style="font-size: 15px; font-weight: 800; color: #f0883e;">RATE</div>
+          <div style="font-size: 12px; color: #8b949e; margin-top: 4px;">Steps 5 → 8</div>
+          <div style="font-size: 22px; font-weight: 800; color: #f0883e; margin-top: 4px;">87%</div>
+          <div style="font-size: 11px; color: #8b949e;">of payments</div>
+          <div style="font-size: 11px; color: #8b949e;">submitted</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Equation -->
+  <div class="equation">
+    <div class="equation-text">
+      <span class="eq-cr">Conversion Rate (65%)</span>
+      <span class="eq-sym"> = </span>
+      <span class="eq-sym">Funnel Completion (75%)</span>
+      <span class="eq-sym"> × </span>
+      <span class="eq-ar">Approval Rate (87%)</span>
+    </div>
+    <div style="font-size: 13px; color: #8b949e; margin-top: 8px;">
+      The gap between CR and AR is where SDK/UX improvements have the most impact
+    </div>
+  </div>
+
+  <!-- Summary cards -->
+  <div class="summary">
+    <div class="card">
+      <div class="card-title">Conversion Rate</div>
+      <div class="card-value val-cr">65%</div>
+      <div class="card-desc">End-to-end: from checkout initiated to payment authorized. Includes all drop-off — UX friction, abandonment, errors, 3DS, AND declines.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Approval Rate</div>
+      <div class="card-value val-ar">87%</div>
+      <div class="card-desc">Starts at "Pay" button click. Only measures whether the payment processor / issuing bank approved the transaction.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">The Gap</div>
+      <div class="card-value val-gap">35%</div>
+      <div class="card-desc">Users lost before payment is even attempted. This is the SDK/checkout UX territory — form friction, 3DS drop-off, slow loading, confusion.</div>
+    </div>
+  </div>
+
+  <!-- Detail: what affects each -->
+  <div class="detail-section">
+    <h2>What Affects Each Metric</h2>
+    <div class="detail-grid">
+      <div class="detail-card">
+        <h3>Conversion Rate <span class="tag tag-cr">SDK / UX</span></h3>
+        <ul class="detail-list">
+          <li>SDK load time & rendering speed</li>
+          <li>Payment form UX & field validation</li>
+          <li>Payment method availability & ordering</li>
+          <li>3DS challenge UX & drop-off</li>
+          <li>Error messages & retry flows</li>
+          <li>Device / browser compatibility</li>
+          <li>Wallet (Apple Pay / Google Pay) eligibility & presentation</li>
+          <li>Redirect flow completion rates</li>
+        </ul>
+      </div>
+      <div class="detail-card">
+        <h3>Approval Rate <span class="tag tag-ar">PAYMENTS / PROCESSING</span></h3>
+        <ul class="detail-list">
+          <li>Issuer decline rates (fraud, funds, limits)</li>
+          <li>Acquirer routing & processing</li>
+          <li>3DS authentication result</li>
+          <li>Network token availability</li>
+          <li>Retry logic & cascade routing</li>
+          <li>Exemption strategy (TRA, low-value)</li>
+          <li>BIN-level performance differences</li>
+          <li>Currency & cross-border factors</li>
+        </ul>
+      </div>
+      <div class="detail-card">
+        <h3>3DS — Affects Both <span class="tag tag-both">OVERLAP ZONE</span></h3>
+        <ul class="detail-list">
+          <li>3DS challenge rate (high rate = more drop-off = lower CR)</li>
+          <li>3DS completion rate (UX problem = CR impact)</li>
+          <li>3DS provider performance (compare side-by-side)</li>
+          <li>Frictionless vs challenge ratio</li>
+          <li>3DS version (v1 vs v2 performance)</li>
+          <li>Post-3DS approval rate (AR impact)</li>
+        </ul>
+      </div>
+      <div class="detail-card">
+        <h3>Key Insight for SDK PM <span class="tag tag-both">YOUR LEVER</span></h3>
+        <ul class="detail-list">
+          <li>You own the gap between CR and AR</li>
+          <li>AR is mostly owned by payments/risk teams</li>
+          <li>Steps 1–4 are pure SDK territory</li>
+          <li>3DS UX is shared ownership</li>
+          <li>A/B test SDK changes against CR, not AR</li>
+          <li>Track CR by SDK version to prove impact</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div style="text-align: center; padding: 40px 0 20px; color: #30363d; font-size: 12px;">
+    Checkout SDK Funnel Analysis — Example figures for illustration
+  </div>
+</div>
+</body>
+</html>
